@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tip Calculator</title>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --muted: #94a3b8;
+      --text: #f8fafc;
+      --accent: #2dd4bf;
+      --accent-dark: #0f766e;
+      --input: #0b1220;
+      --border: #334155;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: radial-gradient(circle at top, #1e3a3a, var(--bg) 55%);
+      color: var(--text);
+      display: grid;
+      place-items: center;
+      padding: 24px;
+    }
+
+    .app {
+      width: min(420px, 100%);
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 28px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+    }
+
+    h1 {
+      margin: 0 0 6px;
+      font-size: 1.6rem;
+    }
+
+    p.subtitle {
+      margin: 0 0 24px;
+      color: var(--muted);
+    }
+
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    input[type="number"] {
+      width: 100%;
+      padding: 12px 14px;
+      margin-bottom: 18px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--input);
+      color: var(--text);
+      font-size: 1rem;
+    }
+
+    input[type="number"]:focus {
+      outline: 2px solid var(--accent);
+      border-color: transparent;
+    }
+
+    .tips {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 18px;
+    }
+
+    .tips button {
+      padding: 10px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--input);
+      color: var(--text);
+      cursor: pointer;
+      font-weight: 600;
+    }
+
+    .tips button:hover {
+      border-color: var(--accent);
+    }
+
+    .tips button.active {
+      background: var(--accent-dark);
+      border-color: var(--accent);
+    }
+
+    .results {
+      display: grid;
+      gap: 10px;
+      padding: 16px;
+      border-radius: 12px;
+      background: var(--input);
+    }
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .row span:last-child {
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .error {
+      min-height: 1.2em;
+      margin: -6px 0 12px;
+      color: #fda4af;
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <h1>Tip Calculator</h1>
+    <p class="subtitle">Enter the bill, pick a tip, and split if you want.</p>
+
+    <label for="bill">Bill amount</label>
+    <input id="bill" type="number" min="0" step="0.01" placeholder="0.00" value="50">
+
+    <label>Tip percent</label>
+    <div class="tips" id="tips">
+      <button type="button" data-tip="10">10%</button>
+      <button type="button" data-tip="15" class="active">15%</button>
+      <button type="button" data-tip="18">18%</button>
+      <button type="button" data-tip="20">20%</button>
+      <button type="button" data-tip="25">25%</button>
+      <button type="button" data-tip="custom">Custom</button>
+    </div>
+
+    <label for="customTip">Custom tip %</label>
+    <input id="customTip" type="number" min="0" step="0.1" placeholder="e.g. 12" disabled>
+
+    <label for="people">Number of people</label>
+    <input id="people" type="number" min="1" step="1" value="1">
+    <div class="error" id="error"></div>
+
+    <section class="results" aria-live="polite">
+      <div class="row"><span>Tip</span><span id="tipAmount">$0.00</span></div>
+      <div class="row"><span>Total</span><span id="total">$0.00</span></div>
+      <div class="row"><span>Per person</span><span id="perPerson">$0.00</span></div>
+    </section>
+  </main>
+
+  <script>
+    const billInput = document.getElementById("bill");
+    const peopleInput = document.getElementById("people");
+    const customTipInput = document.getElementById("customTip");
+    const errorEl = document.getElementById("error");
+    const tipButtons = document.querySelectorAll("#tips button");
+
+    let tipPercent = 15;
+
+    function money(value) {
+      return "$" + value.toFixed(2);
+    }
+
+    function calculate() {
+      if (!customTipInput.disabled) {
+        tipPercent = customTipInput.value === "" ? 0 : Number(customTipInput.value);
+      }
+
+      const bill = Number(billInput.value);
+      const people = Number(peopleInput.value);
+      const tip = Number(tipPercent);
+
+      if (billInput.value !== "" && (bill < 0 || Number.isNaN(bill))) {
+        errorEl.textContent = "Enter a valid bill amount.";
+        return;
+      }
+
+      if (people < 1 || !Number.isInteger(people)) {
+        errorEl.textContent = "People must be a whole number of 1 or more.";
+        return;
+      }
+
+      if (tip < 0 || Number.isNaN(tip)) {
+        errorEl.textContent = "Enter a valid tip percent.";
+        return;
+      }
+
+      errorEl.textContent = "";
+      const tipAmount = bill * (tip / 100);
+      const total = bill + tipAmount;
+      document.getElementById("tipAmount").textContent = money(tipAmount);
+      document.getElementById("total").textContent = money(total);
+      document.getElementById("perPerson").textContent = money(total / people);
+    }
+
+    tipButtons.forEach((button) => {
+      button.addEventListener("click", () => {
+        tipButtons.forEach((b) => b.classList.remove("active"));
+        button.classList.add("active");
+
+        if (button.dataset.tip === "custom") {
+          customTipInput.disabled = false;
+          customTipInput.focus();
+          tipPercent = Number(customTipInput.value);
+        } else {
+          customTipInput.disabled = true;
+          tipPercent = Number(button.dataset.tip);
+        }
+
+        calculate();
+      });
+    });
+
+    [billInput, peopleInput, customTipInput].forEach((input) => {
+      input.addEventListener("input", () => {
+        if (!customTipInput.disabled) {
+          tipPercent = Number(customTipInput.value);
+        }
+        calculate();
+      });
+    });
+
+    calculate();
+  </script>
+</body>
+</html>
